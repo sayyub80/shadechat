@@ -36,7 +36,6 @@ export default function SignInForm() {
       identifier: data.identifier,
       password: data.password,
     });
-
     if (result?.error) {
       if (result.error === 'CredentialsSignin') {
         toast({
@@ -46,7 +45,7 @@ export default function SignInForm() {
         });
       } else {
         toast({
-          title: 'Error',
+          title: 'Error ',
           description: result.error,
           variant: 'destructive',
         });
