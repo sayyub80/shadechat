@@ -38,6 +38,9 @@ export default function SendMessage() {
   const params = useParams<{ username: string }>();
   const username = params.username;
 
+  const [suggestedMessages, setSuggestedMessages] = useState<string[]>([]);
+  const [isFetchingMessages, setIsFetchingMessages] = useState(false);
+
   const {
     complete,
     completion,
@@ -46,6 +49,9 @@ export default function SendMessage() {
   } = useCompletion({
     api: '/api/suggest-messages',
     initialCompletion: initialMessageString,
+    onFinish: (prompt, completion) => {
+      setSuggestedMessages(parseStringMessages(completion));
+    }
   });
 
   const form = useForm<z.infer<typeof messageSchema>>({
@@ -87,11 +93,19 @@ export default function SendMessage() {
   };
 
   const fetchSuggestedMessages = async () => {
+    setIsFetchingMessages(true);
     try {
-      complete('');
+      const response = await axios.post('/api/suggest-messages');
+      setSuggestedMessages(parseStringMessages(response.data.messages));
     } catch (error) {
       console.error('Error fetching messages:', error);
-      // Handle error appropriately
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch suggested messages',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsFetchingMessages(false);
     }
   };
 
@@ -150,10 +164,12 @@ export default function SendMessage() {
             <h3 className="text-xl font-semibold">Messages</h3>
           </CardHeader>
           <CardContent className="flex flex-col space-y-4">
-            {error ? (
+            {isFetchingMessages ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : error ? (
               <p className="text-red-500">{error.message}</p>
             ) : (
-              parseStringMessages(completion).map((message, index) => (
+              suggestedMessages.map((message, index) => (
                 <Button
                   key={index}
                   variant="outline"
